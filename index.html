@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coordinadores - Sistema de Ventas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            padding: 40px;
+            width: 400px;
+            max-width: 90%;
+        }
+
+        .login-container h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 15px;
+            text-align: center;
+            display: none;
+        }
+
+        .loading {
+            text-align: center;
+            margin-top: 15px;
+            color: #667eea;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h2>Inicio de Sesión - Coordinadores</h2>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="codigo">Código de Coordinador</label>
+                <input type="text" id="codigo" required placeholder="Ingrese su código">
+            </div>
+            <div class="form-group">
+                <label for="clave">Clave de Ingreso</label>
+                <input type="password" id="clave" required placeholder="Ingrese su clave">
+            </div>
+            <button type="submit">Ingresar</button>
+            <div class="error-message" id="errorMessage"></div>
+            <div class="loading" id="loading">Verificando...</div>
+        </form>
+    </div>
+
+    <script>
+        // Usar google.script.run para llamar a las funciones del Apps Script
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const codigo = document.getElementById('codigo').value.trim();
+            const clave = document.getElementById('clave').value;
+            const errorDiv = document.getElementById('errorMessage');
+            const loadingDiv = document.getElementById('loading');
+            
+            errorDiv.style.display = 'none';
+            loadingDiv.style.display = 'block';
+            
+            if (!codigo || !clave) {
+                errorDiv.textContent = 'Por favor, complete todos los campos';
+                errorDiv.style.display = 'block';
+                loadingDiv.style.display = 'none';
+                return;
+            }
+            
+            try {
+                // Llamar a la función verificarCoordinador del Apps Script
+                google.script.run
+                    .withSuccessHandler(function(result) {
+                        loadingDiv.style.display = 'none';
+                        if (result.exito) {
+                            // Guardar datos del coordinador
+                            sessionStorage.setItem('coordinador', JSON.stringify({
+                                codigo: codigo,
+                                nombres: result.nombre
+                            }));
+                            // Redirigir al dashboard
+                            window.location.href = 'dashboard_coordinadores.html';
+                        } else {
+                            errorDiv.textContent = result.error || 'Código o clave incorrectos';
+                            errorDiv.style.display = 'block';
+                        }
+                    })
+                    .withFailureHandler(function(error) {
+                        loadingDiv.style.display = 'none';
+                        errorDiv.textContent = 'Error al verificar: ' + error.message;
+                        errorDiv.style.display = 'block';
+                    })
+                    .verificarCoordinador(codigo, clave);
+            } catch (error) {
+                loadingDiv.style.display = 'none';
+                errorDiv.textContent = 'Error: ' + error.message;
+                errorDiv.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
