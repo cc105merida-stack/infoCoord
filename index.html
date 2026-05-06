@@ -3,166 +3,690 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coordinadores - Sistema de Ventas</title>
+    <title>Coordinadores - Panel de Ventas</title>
+    <link rel="icon" type="image/jpeg" href="https://i.pinimg.com/736x/16/71/90/16719070ba26c45eb14ddf3f3d4fc69c.jpg">
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .login-container {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
-            padding: 40px;
-            width: 400px;
-            max-width: 90%;
-        }
-
-        .login-container h2 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 30px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-            color: #555;
-            font-weight: 500;
-        }
-
-        input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-        }
-
-        input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        button {
-            width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-        }
-
-        .error-message {
-            background: #fee;
-            color: #c33;
-            padding: 10px;
-            border-radius: 5px;
-            margin-top: 15px;
-            text-align: center;
-            display: none;
-        }
-
-        .loading {
-            text-align: center;
-            margin-top: 15px;
-            color: #667eea;
-            display: none;
-        }
+        * { box-sizing: border-box; font-family: system-ui, 'Segoe UI', Roboto, sans-serif; }
+        body { background: #eef2ff; margin: 0; min-height: 100vh; padding: 20px; }
+        .app-container { max-width: 1600px; width: 100%; background: white; border-radius: 2rem; box-shadow: 0 20px 35px -12px rgba(0,0,0,0.2); margin: 0 auto; overflow-x: auto; }
+        .login-panel, .dashboard-panel { padding: 2rem; }
+        .hidden { display: none; }
+        .header-logo { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 1rem; }
+        .logo-img { width: 70px; height: auto; border-radius: 20px; }
+        .title { font-size: 1.8rem; font-weight: 800; background: linear-gradient(135deg, #1e3a8a, #3b82f6); background-clip: text; -webkit-background-clip: text; color: transparent; margin: 0; }
+        .login-form { max-width: 450px; margin: 1rem auto; background: #f9fafb; padding: 2rem; border-radius: 1.5rem; border: 1px solid #e0e7ff; }
+        .form-group { margin-bottom: 1.5rem; }
+        label { font-weight: 600; display: block; margin-bottom: 0.5rem; color: #1e293b; }
+        select, input { width: 100%; padding: 12px 16px; border-radius: 60px; border: 1.5px solid #cbd5e1; font-size: 1rem; background: white; }
+        button { background: #1e3a8a; color: white; border: none; padding: 12px; border-radius: 60px; font-weight: bold; font-size: 1rem; cursor: pointer; width: 100%; transition: 0.2s; }
+        button:hover { background: #2563eb; }
+        .error-msg { color: #dc2626; background: #fee2e2; padding: 10px; border-radius: 60px; text-align: center; margin-top: 1rem; }
+        .dashboard-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 1.5rem; }
+        .welcome-box { background: #e0e7ff; padding: 0.5rem 1.2rem; border-radius: 40px; font-weight: 500; }
+        .logout-btn { background: #475569; width: auto; padding: 8px 20px; }
+        .filter-section { background: #f8fafc; border-radius: 1.5rem; padding: 1rem 1.5rem; margin-bottom: 2rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+        .filter-group { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+        .filter-group label { margin-bottom: 0; font-weight: 500; }
+        .filter-group select, .filter-group input { width: auto; min-width: 180px; }
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .card { background: white; border-radius: 1.5rem; padding: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #e2e8f0; cursor: pointer; transition: all 0.2s; text-align: center; }
+        .card.active { border: 2px solid #1e3a8a; background: #eff6ff; transform: scale(0.98); }
+        .card:hover { background: #f1f5f9; }
+        .card h3 { margin: 0 0 0.5rem; font-size: 1rem; color: #334155; }
+        .big-number { font-size: 2rem; font-weight: 800; color: #0f172a; }
+        .sub-stats { margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px dashed #cbd5e1; font-size: 0.8rem; }
+        .sub-stats p { display: flex; justify-content: space-between; margin: 4px 0; }
+        .btn-clear { background: #64748b; width: auto; padding: 6px 16px; font-size: 0.8rem; }
+        .table-wrapper { overflow-x: auto; margin-top: 1.5rem; border-radius: 1rem; border: 1px solid #e2e8f0; max-height: 70vh; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+        th, td { border: 1px solid #cbd5e1; padding: 8px 10px; text-align: left; vertical-align: top; }
+        th { background: #f1f5f9; font-weight: 600; position: sticky; top: 0; z-index: 10; }
+        .bg-validada { background-color: #dcfce7; }
+        .bg-rechazada { background-color: #ffe4e6; }
+        .bg-pendiente { background-color: #fef9c3; }
+        .footer-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem; flex-wrap: wrap; }
+        .info-records { background: #f1f5f9; padding: 0.5rem 1rem; border-radius: 40px; font-size: 0.85rem; display: inline-block; }
+        .loading { text-align: center; padding: 2rem; color: #475569; }
+        .btn-download { background: #10b981; width: auto; padding: 8px 20px; }
+        .btn-download:hover { background: #059669; }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <h2>Inicio de Sesión - Coordinadores</h2>
-        <form id="loginForm">
+<div class="app-container" id="appContainer">
+    <!-- Login -->
+    <div id="loginPanel" class="login-panel">
+        <div class="header-logo">
+            <img class="logo-img" src="https://i.pinimg.com/736x/16/71/90/16719070ba26c45eb14ddf3f3d4fc69c.jpg" alt="Logo">
+            <h1 class="title">Panel de Coordinadores - Ventas</h1>
+        </div>
+        <div class="login-form">
             <div class="form-group">
-                <label for="codigo">Código de Coordinador</label>
-                <input type="text" id="codigo" required placeholder="Ingrese su código">
+                <label>👤 Selecciona tu nombre</label>
+                <select id="coordinadorSelect"><option>-- Cargando --</option></select>
             </div>
             <div class="form-group">
-                <label for="clave">Clave de Ingreso</label>
-                <input type="password" id="clave" required placeholder="Ingrese su clave">
+                <label>🔐 Clave de acceso</label>
+                <input type="password" id="claveInput" placeholder="Ingresa tu clave">
             </div>
-            <button type="submit">Ingresar</button>
-            <div class="error-message" id="errorMessage"></div>
-            <div class="loading" id="loading">Verificando...</div>
-        </form>
+            <button id="loginBtn">Ingresar</button>
+            <div id="loginError" class="error-msg" style="display:none"></div>
+        </div>
     </div>
 
-    <script>
-        // Usar google.script.run para llamar a las funciones del Apps Script
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
+    <!-- Dashboard -->
+    <div id="dashboardPanel" class="dashboard-panel hidden">
+        <div class="header-logo">
+            <img class="logo-img" src="https://i.pinimg.com/736x/16/71/90/16719070ba26c45eb14ddf3f3d4fc69c.jpg" alt="Logo">
+            <h1 class="title">Panel de Coordinadores - Ventas</h1>
+        </div>
+        <div class="dashboard-header">
+            <div class="welcome-box" id="welcomeMsg">Bienvenido</div>
+            <button id="logoutBtn" class="logout-btn">Cerrar sesión</button>
+        </div>
+        
+        <div class="filter-section">
+            <div class="filter-group">
+                <span>📅 Fecha:</span>
+                <input type="date" id="datePicker">
+            </div>
+            <div class="filter-group">
+                <span>👔 Gerente:</span>
+                <select id="gerenteSelect">
+                    <option value="__ALL__">📋 Todos los gerentes</option>
+                </select>
+            </div>
+            <button id="clearFilterBtn" class="btn-clear">Mostrar todos</button>
+        </div>
+
+        <div class="cards-grid" id="cardsGrid"></div>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin: 1rem 0 0.5rem;">
+            <div class="info-records" id="infoRecords">Registros: --</div>
+            <button id="refreshBtn" class="btn-clear" style="background:#3b82f6;">🔄 Refrescar</button>
+        </div>
+        
+        <div class="table-wrapper" id="tableWrapper">
+            <table id="callsTable">
+                <thead id="tableHeader"></thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+        <div class="footer-actions">
+            <button id="downloadBtn" class="btn-download">📎 Descargar tabla actual (XLSX)</button>
+        </div>
+        <div style="font-size:0.7rem; text-align:center; margin-top:1rem; color:#888;">
+            Datos actualizados desde Google Sheets
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==================== CONFIGURACIÓN ====================
+    const SPREADSHEET_ID = '1YUTaWS-_2GPghdv-bl_XU3vHY2GghtD-k4FN2UZWQHs';
+    const SHEET_DATA = 'Data';
+    const SHEET_GERENTES = 'GERENTES';
+    const SHEET_COORDINADORES = 'COORDINADORES';
+
+    // Índices de columnas en DATA (0-based)
+    const COL_FECHA_REGISTRO = 23;      // Columna X (FECHA Y HORA REGISTRO)
+    const COL_ESTATUS = 2;              // Columna C (ESTATUS)
+    const COL_FOLIO = 3;                // Columna D
+    const COL_TIPO_VENTA = 4;           // Columna E
+    const COL_ESTRATEGIA = 5;           // Columna F
+    const COL_GERENTE = 6;              // Columna G (GERENTES)
+    const COL_CLAVE_PROMOTOR = 7;       // Columna H
+    const COL_NOMBRE_CLIENTE = 8;       // Columna I
+    const COL_CELULAR_CLIENTE = 9;      // Columna J
+    const COL_CELULAR_REF = 10;         // Columna K
+    const COL_CORREO = 11;              // Columna L
+    const COL_DIRECCION = 12;           // Columna M
+    const COL_PAQUETE = 13;             // Columna N
+    const COL_VELOCIDAD = 14;           // Columna O
+    const COL_GASTOS_INSTALACION = 15;  // Columna P
+    const COL_BENEFICIOS = 16;          // Columna Q
+    const COL_OBSERVACIONES = 17;       // Columna R
+    const COL_ESTADO2 = 20;             // Columna U (ESTADO2)
+    const COL_N_INTENTOS = 40;          // Columna AP (N_INTENTOS, asumiendo índice 40)
+
+    // Datos globales
+    let coordinadoresList = [];
+    let gerentesList = [];               // { nombre, coordinador }
+    let rawDataRows = [];
+    let dataStartRow = 0;
+    
+    let loggedCoordinador = null;        // { codigo, nombres }
+    let currentDate = null;
+    let currentGerente = '__ALL__';
+    let activeStatusFilter = null;
+    
+    let currentFilteredRows = [];
+
+    // Elementos DOM
+    const loginPanel = document.getElementById('loginPanel');
+    const dashboardPanel = document.getElementById('dashboardPanel');
+    const coordinadorSelect = document.getElementById('coordinadorSelect');
+    const claveInput = document.getElementById('claveInput');
+    const loginBtn = document.getElementById('loginBtn');
+    const loginError = document.getElementById('loginError');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const welcomeMsg = document.getElementById('welcomeMsg');
+    const datePicker = document.getElementById('datePicker');
+    const gerenteSelect = document.getElementById('gerenteSelect');
+    const cardsGrid = document.getElementById('cardsGrid');
+    const tableHeader = document.getElementById('tableHeader');
+    const tableBody = document.getElementById('tableBody');
+    const infoRecords = document.getElementById('infoRecords');
+    const clearFilterBtn = document.getElementById('clearFilterBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    // ========== FUNCIONES AUXILIARES ==========
+    function extraerFechaDesdeDateTime(valor) {
+        if (valor === undefined || valor === null || valor === '') return null;
+        if (valor instanceof Date && !isNaN(valor)) {
+            return `${valor.getFullYear()}-${String(valor.getMonth()+1).padStart(2,'0')}-${String(valor.getDate()).padStart(2,'0')}`;
+        }
+        if (typeof valor === 'number') {
+            if (valor > 40000 && valor < 50000) {
+                const date = new Date(Math.round((valor - 25569) * 86400 * 1000));
+                return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+            }
+            const d = new Date(valor);
+            if (!isNaN(d)) return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        }
+        let str = String(valor).trim();
+        let fechaPart = str.split(' ')[0];
+        if (fechaPart && fechaPart.match(/^\d{4}[-\/]\d{2}[-\/]\d{2}/)) {
+            return fechaPart.replace(/\//g, '-');
+        }
+        const d = new Date(str);
+        if (!isNaN(d)) return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        return null;
+    }
+
+    // ========== OBTENER DATOS DE SHEETS ==========
+    async function fetchSheetData(sheetName) {
+        const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
+        const resp = await fetch(url);
+        const text = await resp.text();
+        const jsonStart = text.indexOf('{');
+        const jsonEnd = text.lastIndexOf('}');
+        if (jsonStart === -1) throw new Error('JSON no encontrado');
+        const jsonStr = text.substring(jsonStart, jsonEnd + 1);
+        const parsed = JSON.parse(jsonStr);
+        return parsed.table.rows.map(row => row.c.map(cell => (cell && cell.v !== undefined) ? cell.v : ''));
+    }
+
+    async function loadCoordinadores() {
+        try {
+            const data = await fetchSheetData(SHEET_COORDINADORES);
+            if (!data.length) throw new Error('No hay datos en COORDINADORES');
             
-            const codigo = document.getElementById('codigo').value.trim();
-            const clave = document.getElementById('clave').value;
-            const errorDiv = document.getElementById('errorMessage');
-            const loadingDiv = document.getElementById('loading');
+            let startRow = 0;
+            const firstRow = data[0];
+            if (firstRow[0] && String(firstRow[0]).toUpperCase().includes('CODIGO')) startRow = 1;
             
-            errorDiv.style.display = 'none';
-            loadingDiv.style.display = 'block';
-            
-            if (!codigo || !clave) {
-                errorDiv.textContent = 'Por favor, complete todos los campos';
-                errorDiv.style.display = 'block';
-                loadingDiv.style.display = 'none';
-                return;
+            coordinadoresList = [];
+            for (let i = startRow; i < data.length; i++) {
+                const codigo = data[i][0]?.toString().trim();
+                const nombres = data[i][1]?.toString().trim();
+                const clave = data[i][2]?.toString().trim();
+                if (codigo && nombres && clave) {
+                    coordinadoresList.push({ codigo, nombres, clave });
+                }
             }
             
-            try {
-                // Llamar a la función verificarCoordinador del Apps Script
-                google.script.run
-                    .withSuccessHandler(function(result) {
-                        loadingDiv.style.display = 'none';
-                        if (result.exito) {
-                            // Guardar datos del coordinador
-                            sessionStorage.setItem('coordinador', JSON.stringify({
-                                codigo: codigo,
-                                nombres: result.nombre
-                            }));
-                            // Redirigir al dashboard
-                            window.location.href = 'dashboard_coordinadores.html';
-                        } else {
-                            errorDiv.textContent = result.error || 'Código o clave incorrectos';
-                            errorDiv.style.display = 'block';
-                        }
-                    })
-                    .withFailureHandler(function(error) {
-                        loadingDiv.style.display = 'none';
-                        errorDiv.textContent = 'Error al verificar: ' + error.message;
-                        errorDiv.style.display = 'block';
-                    })
-                    .verificarCoordinador(codigo, clave);
-            } catch (error) {
-                loadingDiv.style.display = 'none';
-                errorDiv.textContent = 'Error: ' + error.message;
-                errorDiv.style.display = 'block';
+            if (!coordinadoresList.length) throw new Error('No se encontraron coordinadores válidos');
+            
+            coordinadorSelect.innerHTML = '<option value="">-- Selecciona --</option>';
+            coordinadoresList.forEach(coord => {
+                const opt = document.createElement('option');
+                opt.value = coord.codigo;
+                opt.textContent = coord.nombres;
+                coordinadorSelect.appendChild(opt);
+            });
+            return true;
+        } catch (err) {
+            loginError.textContent = `Error cargando coordinadores: ${err.message}`;
+            loginError.style.display = 'block';
+            return false;
+        }
+    }
+
+    async function loadGerentes() {
+        try {
+            const data = await fetchSheetData(SHEET_GERENTES);
+            if (!data.length) return [];
+            
+            let startRow = 0;
+            const firstRow = data[0];
+            if (firstRow[0] && String(firstRow[0]).toUpperCase().includes('NOMBRE')) startRow = 1;
+            
+            const gerentes = [];
+            for (let i = startRow; i < data.length; i++) {
+                const nombre = data[i][0]?.toString().trim();
+                const coordinador = data[i][11]?.toString().trim(); // Columna COORDINADOR (índice 11)
+                if (nombre && coordinador) {
+                    gerentes.push({ nombre, coordinador });
+                }
             }
+            return gerentes;
+        } catch (err) {
+            console.error('Error cargando gerentes:', err);
+            return [];
+        }
+    }
+
+    async function loadDataRows() {
+        try {
+            const allRows = await fetchSheetData(SHEET_DATA);
+            if (!allRows.length) throw new Error('Data vacía');
+            
+            let startRow = 0;
+            if (allRows.length && (String(allRows[0][0]).toLowerCase().includes('fecha') || 
+                String(allRows[0][COL_ESTRATEGIA]).toLowerCase().includes('estrategia'))) {
+                startRow = 1;
+            }
+            dataStartRow = startRow;
+            rawDataRows = [];
+            
+            for (let i = startRow; i < allRows.length; i++) {
+                let row = [...allRows[i]];
+                const fechaSolo = extraerFechaDesdeDateTime(row[COL_FECHA_REGISTRO]);
+                row.push(fechaSolo); // Al final: fechaSolo
+                rawDataRows.push(row);
+            }
+            console.log(`📊 Filas cargadas: ${rawDataRows.length}`);
+            return true;
+        } catch (err) {
+            console.error('Error cargando Data:', err);
+            alert(`Error cargando ventas: ${err.message}`);
+            return false;
+        }
+    }
+
+    // ========== FILTRADO ==========
+    function getGerentesDelCoordinador() {
+        if (!loggedCoordinador) return [];
+        return gerentesList.filter(g => g.coordinador === loggedCoordinador.codigo).map(g => g.nombre);
+    }
+
+    function getRowsFiltered() {
+        if (!rawDataRows.length) return [];
+        
+        const gerentesPermitidos = getGerentesDelCoordinador();
+        
+        return rawDataRows.filter(row => {
+            const gerenteRow = row[COL_GERENTE]?.toString().trim() || '';
+            if (!gerentesPermitidos.includes(gerenteRow)) return false;
+            
+            if (currentDate) {
+                const fechaFila = row[row.length - 1];
+                if (fechaFila !== currentDate) return false;
+            }
+            
+            if (currentGerente !== '__ALL__' && currentGerente) {
+                if (gerenteRow !== currentGerente) return false;
+            }
+            
+            return true;
         });
-    </script>
+    }
+
+    function applyStatusFilter(rows) {
+        if (!activeStatusFilter) return rows;
+        
+        if (activeStatusFilter === 'PENDIENTE') {
+            return rows.filter(row => {
+                const estado2 = String(row[COL_ESTADO2] || '').trim().toUpperCase();
+                return estado2 === 'PENDIENTE' || estado2 === 'DISPONIBLE';
+            });
+        } else if (activeStatusFilter === 'COMPLETADA_VALIDADA') {
+            return rows.filter(row => {
+                const estado2 = String(row[COL_ESTADO2] || '').trim().toUpperCase();
+                const estatus = String(row[COL_ESTATUS] || '').toLowerCase();
+                return estado2 === 'COMPLETADA' && estatus.includes('validada');
+            });
+        } else if (activeStatusFilter === 'COMPLETADA_CANCELADO') {
+            return rows.filter(row => {
+                const estado2 = String(row[COL_ESTADO2] || '').trim().toUpperCase();
+                const estatus = String(row[COL_ESTATUS] || '').toLowerCase();
+                return estado2 === 'COMPLETADA' && estatus.includes('servicio cancelado');
+            });
+        } else if (activeStatusFilter === 'COMPLETADA_PROGRAMADA') {
+            return rows.filter(row => {
+                const estado2 = String(row[COL_ESTADO2] || '').trim().toUpperCase();
+                const estatus = String(row[COL_ESTATUS] || '').toLowerCase();
+                return estado2 === 'COMPLETADA' && estatus.includes('llamada programada');
+            });
+        } else {
+            return rows.filter(row => String(row[COL_ESTADO2] || '').trim().toUpperCase() === activeStatusFilter);
+        }
+    }
+
+    // ========== ESTADÍSTICAS ==========
+    function computeStatsFromRows(rows) {
+        let completadas = 0, rechazadas = 0, noContesta = 0, enProceso = 0, pendientes = 0;
+        let validadas = 0, servCancelado = 0, llamProgramada = 0;
+        
+        for (const row of rows) {
+            const estado2 = String(row[COL_ESTADO2] || '').trim().toUpperCase();
+            const estatus = String(row[COL_ESTATUS] || '').toLowerCase();
+            
+            if (estado2 === 'COMPLETADA') {
+                completadas++;
+                if (estatus.includes('validada')) validadas++;
+                else if (estatus.includes('servicio cancelado')) servCancelado++;
+                else if (estatus.includes('llamada programada')) llamProgramada++;
+            } else if (estado2 === 'RECHAZADA') rechazadas++;
+            else if (estado2 === 'NO CONTESTA') noContesta++;
+            else if (estado2 === 'EN PROCESO') enProceso++;
+            else if (estado2 === 'PENDIENTE' || estado2 === 'DISPONIBLE') pendientes++;
+        }
+        
+        return { completadas, rechazadas, noContesta, enProceso, pendientes, validadas, servCancelado, llamProgramada };
+    }
+
+    function renderCards(stats) {
+        const { completadas, rechazadas, noContesta, enProceso, pendientes, validadas, servCancelado, llamProgramada } = stats;
+        
+        cardsGrid.innerHTML = `
+            <div class="card" data-status="COMPLETADA_VALIDADA">
+                <h3>✅ Validadas</h3>
+                <div class="big-number">${validadas}</div>
+                <div class="sub-stats"><p><span>Subtotal completadas</span><span>${completadas}</span></p></div>
+            </div>
+            <div class="card" data-status="COMPLETADA_CANCELADO">
+                <h3>❌ Servicio Cancelado</h3>
+                <div class="big-number">${servCancelado}</div>
+            </div>
+            <div class="card" data-status="COMPLETADA_PROGRAMADA">
+                <h3>📅 Llamadas Programadas</h3>
+                <div class="big-number">${llamProgramada}</div>
+            </div>
+            <div class="card" data-status="RECHAZADA">
+                <h3>🚫 Rechazadas</h3>
+                <div class="big-number">${rechazadas}</div>
+            </div>
+            <div class="card" data-status="NO CONTESTA">
+                <h3>📞 No Contesta</h3>
+                <div class="big-number">${noContesta}</div>
+            </div>
+            <div class="card" data-status="EN PROCESO">
+                <h3>🔄 En Proceso</h3>
+                <div class="big-number">${enProceso}</div>
+            </div>
+            <div class="card" data-status="PENDIENTE">
+                <h3>⏰ Pendientes</h3>
+                <div class="big-number">${pendientes}</div>
+            </div>
+        `;
+        
+        document.querySelectorAll('.card').forEach(card => {
+            if (activeStatusFilter && card.dataset.status === activeStatusFilter) {
+                card.classList.add('active');
+            } else {
+                card.classList.remove('active');
+            }
+            card.addEventListener('click', () => {
+                const status = card.dataset.status;
+                if (activeStatusFilter === status) {
+                    activeStatusFilter = null;
+                } else {
+                    activeStatusFilter = status;
+                }
+                refreshDashboard();
+                saveSession();
+            });
+        });
+    }
+
+    // ========== TABLA ==========
+    const columnMapping = [
+        { label: "#", getValue: (row, idx) => idx + 1 },
+        { label: "FECHA", getValue: row => row[row.length-1] || '' },
+        { label: "GERENTE", getValue: row => row[COL_GERENTE] || '' },
+        { label: "ESTADO2", getValue: row => row[COL_ESTADO2] || '' },
+        { label: "ESTATUS", getValue: row => row[COL_ESTATUS] || '' },
+        { label: "N° INTENTOS", getValue: row => row[COL_N_INTENTOS] || '' },
+        { label: "FOLIO SIAC", getValue: row => row[COL_FOLIO] || '' },
+        { label: "TIPO VENTA", getValue: row => row[COL_TIPO_VENTA] || '' },
+        { label: "ESTRATEGIA", getValue: row => row[COL_ESTRATEGIA] || '' },
+        { label: "CLAVE PROMOTOR", getValue: row => row[COL_CLAVE_PROMOTOR] || '' },
+        { label: "NOMBRE CLIENTE", getValue: row => row[COL_NOMBRE_CLIENTE] || '' },
+        { label: "CELULAR", getValue: row => row[COL_CELULAR_CLIENTE] || '' },
+        { label: "CELULAR REF", getValue: row => row[COL_CELULAR_REF] || '' },
+        { label: "CORREO", getValue: row => row[COL_CORREO] || '' },
+        { label: "DIRECCIÓN", getValue: row => row[COL_DIRECCION] || '' },
+        { label: "PAQUETE", getValue: row => row[COL_PAQUETE] || '' },
+        { label: "VELOCIDAD", getValue: row => row[COL_VELOCIDAD] || '' },
+        { label: "GASTOS INST.", getValue: row => row[COL_GASTOS_INSTALACION] || '' },
+        { label: "BENEFICIOS", getValue: row => row[COL_BENEFICIOS] || '' },
+        { label: "OBSERVACIONES", getValue: row => row[COL_OBSERVACIONES] || '' }
+    ];
+
+    function getRowBackgroundClass(row) {
+        const estado2 = String(row[COL_ESTADO2] || '').toUpperCase();
+        const estatus = String(row[COL_ESTATUS] || '').toLowerCase();
+        if (estado2 === 'COMPLETADA' && estatus.includes('validada')) return 'bg-validada';
+        if (estado2 === 'RECHAZADA' || estatus.includes('servicio cancelado')) return 'bg-rechazada';
+        if (estado2 === 'PENDIENTE' || estado2 === 'DISPONIBLE' || estatus.includes('llamada programada')) return 'bg-pendiente';
+        return '';
+    }
+
+    function renderTable(rows) {
+        tableHeader.innerHTML = `<tr>${columnMapping.map(col => `<th>${col.label}</th>`).join('')}</tr>`;
+        if (!rows.length) {
+            tableBody.innerHTML = `<tr><td colspan="${columnMapping.length}">No hay datos para los filtros seleccionados</td></tr>`;
+            return;
+        }
+        let tbodyHtml = '';
+        rows.forEach((row, idx) => {
+            const bgClass = getRowBackgroundClass(row);
+            let rowHtml = `<tr class="${bgClass}">`;
+            for (let col of columnMapping) {
+                let value = col.getValue(row, idx);
+                rowHtml += `<td>${value !== undefined && value !== null ? value : ''}</td>`;
+            }
+            rowHtml += `</table>`;
+            tbodyHtml += rowHtml;
+        });
+        tableBody.innerHTML = tbodyHtml;
+    }
+
+    async function refreshDashboard() {
+        if (!loggedCoordinador) return;
+        
+        const baseRows = getRowsFiltered();
+        const filteredRows = applyStatusFilter(baseRows);
+        currentFilteredRows = filteredRows;
+        
+        const stats = computeStatsFromRows(baseRows);
+        renderCards(stats);
+        renderTable(filteredRows);
+        
+        const totalMsg = `Mostrando ${filteredRows.length} de ${baseRows.length} registros`;
+        infoRecords.textContent = totalMsg;
+    }
+
+    function updateGerenteSelect() {
+        const gerentesPermitidos = getGerentesDelCoordinador();
+        gerenteSelect.innerHTML = '<option value="__ALL__">📋 Todos los gerentes</option>';
+        gerentesPermitidos.forEach(ger => {
+            const opt = document.createElement('option');
+            opt.value = ger;
+            opt.textContent = ger;
+            if (currentGerente === ger) opt.selected = true;
+            gerenteSelect.appendChild(opt);
+        });
+    }
+
+    // ========== PERSISTENCIA Y LOGIN ==========
+    function saveSession() {
+        if (loggedCoordinador && currentDate) {
+            localStorage.setItem('coord_codigo', loggedCoordinador.codigo);
+            localStorage.setItem('coord_nombres', loggedCoordinador.nombres);
+            localStorage.setItem('coord_currentDate', currentDate);
+            localStorage.setItem('coord_currentGerente', currentGerente);
+            localStorage.setItem('coord_activeStatusFilter', activeStatusFilter || '');
+        }
+    }
+
+    async function restoreSession() {
+        const savedCodigo = localStorage.getItem('coord_codigo');
+        const savedDate = localStorage.getItem('coord_currentDate');
+        const savedGerente = localStorage.getItem('coord_currentGerente');
+        const savedFilter = localStorage.getItem('coord_activeStatusFilter');
+        
+        if (savedCodigo && savedDate) {
+            const coord = coordinadoresList.find(c => c.codigo === savedCodigo);
+            if (coord) {
+                loggedCoordinador = coord;
+                currentDate = savedDate;
+                currentGerente = savedGerente || '__ALL__';
+                activeStatusFilter = savedFilter || null;
+                
+                await loadGerentesData();
+                const ok = await loadDataRows();
+                if (ok) {
+                    loginPanel.classList.add('hidden');
+                    dashboardPanel.classList.remove('hidden');
+                    welcomeMsg.innerHTML = `👋 Bienvenido, ${loggedCoordinador.nombres} (Código: ${loggedCoordinador.codigo})`;
+                    datePicker.value = currentDate;
+                    updateGerenteSelect();
+                    await refreshDashboard();
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    async function loadGerentesData() {
+        gerentesList = await loadGerentes();
+    }
+
+    async function handleLogin() {
+        loginError.style.display = 'none';
+        const selectedCodigo = coordinadorSelect.value;
+        const clave = claveInput.value.trim();
+        
+        if (!selectedCodigo || !clave) {
+            loginError.textContent = 'Selecciona un coordinador e ingresa tu clave.';
+            loginError.style.display = 'block';
+            return;
+        }
+        
+        const coordinador = coordinadoresList.find(c => c.codigo === selectedCodigo);
+        if (!coordinador || coordinador.clave !== clave) {
+            loginError.textContent = 'Clave incorrecta.';
+            loginError.style.display = 'block';
+            return;
+        }
+        
+        loggedCoordinador = coordinador;
+        
+        await loadGerentesData();
+        const ok = await loadDataRows();
+        if (!ok) return;
+        
+        loginPanel.classList.add('hidden');
+        dashboardPanel.classList.remove('hidden');
+        welcomeMsg.innerHTML = `👋 Bienvenido, ${loggedCoordinador.nombres} (Código: ${loggedCoordinador.codigo})`;
+        
+        const today = new Date();
+        currentDate = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+        datePicker.value = currentDate;
+        currentGerente = '__ALL__';
+        activeStatusFilter = null;
+        
+        updateGerenteSelect();
+        await refreshDashboard();
+        saveSession();
+    }
+
+    function logout() {
+        loggedCoordinador = null;
+        rawDataRows = [];
+        activeStatusFilter = null;
+        dashboardPanel.classList.add('hidden');
+        loginPanel.classList.remove('hidden');
+        localStorage.clear();
+        claveInput.value = '';
+        loadCoordinadores();
+    }
+
+    async function refreshAllData() {
+        await loadGerentesData();
+        await loadDataRows();
+        await refreshDashboard();
+        saveSession();
+    }
+
+    // ========== EXPORTAR EXCEL ==========
+    function downloadExcel() {
+        if (!currentFilteredRows.length) {
+            alert("No hay datos para exportar.");
+            return;
+        }
+        const sheetData = [columnMapping.map(col => col.label)];
+        for (let i = 0; i < currentFilteredRows.length; i++) {
+            const row = currentFilteredRows[i];
+            const rowData = [];
+            for (let col of columnMapping) {
+                let value = col.getValue(row, i);
+                rowData.push(value !== undefined && value !== null ? value : '');
+            }
+            sheetData.push(rowData);
+        }
+        const ws = XLSX.utils.aoa_to_sheet(sheetData);
+        const wb = XLSX.utils.book_new();
+        const fileName = `ventas_${loggedCoordinador.codigo}_${currentDate}_${currentGerente === '__ALL__' ? 'todos' : currentGerente}.xlsx`;
+        XLSX.utils.book_append_sheet(wb, ws, 'Ventas');
+        XLSX.writeFile(wb, fileName);
+    }
+
+    // ========== EVENTOS ==========
+    datePicker.addEventListener('change', async (e) => {
+        currentDate = e.target.value;
+        activeStatusFilter = null;
+        await refreshDashboard();
+        saveSession();
+    });
+    
+    gerenteSelect.addEventListener('change', async (e) => {
+        currentGerente = e.target.value;
+        activeStatusFilter = null;
+        await refreshDashboard();
+        saveSession();
+    });
+    
+    clearFilterBtn.addEventListener('click', async () => {
+        activeStatusFilter = null;
+        currentGerente = '__ALL__';
+        gerenteSelect.value = '__ALL__';
+        await refreshDashboard();
+        saveSession();
+    });
+    
+    refreshBtn.addEventListener('click', async () => {
+        await refreshAllData();
+    });
+    
+    downloadBtn.addEventListener('click', downloadExcel);
+    loginBtn.addEventListener('click', handleLogin);
+    logoutBtn.addEventListener('click', logout);
+
+    // ========== INICIO ==========
+    (async function init() {
+        await loadCoordinadores();
+        const restored = await restoreSession();
+        if (!restored) {
+            loginPanel.classList.remove('hidden');
+            dashboardPanel.classList.add('hidden');
+        }
+    })();
+</script>
 </body>
 </html>
