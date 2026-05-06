@@ -147,7 +147,7 @@
     const COL_BENEFICIOS = 16;          // Columna Q
     const COL_OBSERVACIONES = 17;       // Columna R
     const COL_ESTADO2 = 20;             // Columna U (ESTADO2)
-    const COL_N_INTENTOS = 40;          // Columna AP (N_INTENTOS, asumiendo índice 40)
+    const COL_N_INTENTOS = 40;          // Columna AP (N_INTENTOS)
 
     // Datos globales
     let coordinadoresList = [];
@@ -266,7 +266,8 @@
             const gerentes = [];
             for (let i = startRow; i < data.length; i++) {
                 const nombre = data[i][0]?.toString().trim();
-                const coordinador = data[i][11]?.toString().trim(); // Columna COORDINADOR (índice 11)
+                // ✅ CORRECCIÓN: Índice 12 para la columna COORDINADOR (columna 13 en 1-based)
+                const coordinador = data[i][12]?.toString().trim();
                 if (nombre && coordinador) {
                     gerentes.push({ nombre, coordinador });
                 }
@@ -294,7 +295,7 @@
             for (let i = startRow; i < allRows.length; i++) {
                 let row = [...allRows[i]];
                 const fechaSolo = extraerFechaDesdeDateTime(row[COL_FECHA_REGISTRO]);
-                row.push(fechaSolo); // Al final: fechaSolo
+                row.push(fechaSolo);
                 rawDataRows.push(row);
             }
             console.log(`📊 Filas cargadas: ${rawDataRows.length}`);
@@ -489,7 +490,7 @@
                 let value = col.getValue(row, idx);
                 rowHtml += `<td>${value !== undefined && value !== null ? value : ''}</td>`;
             }
-            rowHtml += `</table>`;
+            rowHtml += `</tr>`;
             tbodyHtml += rowHtml;
         });
         tableBody.innerHTML = tbodyHtml;
