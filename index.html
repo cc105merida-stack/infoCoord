@@ -29,7 +29,7 @@
         .filter-group { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
         .filter-group label { margin-bottom: 0; font-weight: 500; }
         .filter-group select, .filter-group input { width: auto; min-width: 180px; }
-        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
         .card { background: white; border-radius: 1.5rem; padding: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #e2e8f0; cursor: pointer; transition: all 0.2s; text-align: center; }
         .card.active { border: 2px solid #1e3a8a; background: #eff6ff; transform: scale(0.98); }
         .card:hover { background: #f1f5f9; }
@@ -46,7 +46,7 @@
         .bg-pendiente { background-color: #fef9c3; }
         .footer-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem; flex-wrap: wrap; }
         .info-records { background: #f1f5f9; padding: 0.5rem 1rem; border-radius: 40px; font-size: 0.85rem; display: inline-block; }
-        .debug-panel { background: #1e1e2f; color: #50fa7b; padding: 1rem; border-radius: 1rem; margin-bottom: 1rem; font-family: monospace; font-size: 0.7rem; overflow-x: auto; max-height: 250px; overflow-y: auto; }
+        .debug-panel { background: #1e1e2f; color: #50fa7b; padding: 1rem; border-radius: 1rem; margin-bottom: 1rem; font-family: monospace; font-size: 0.7rem; overflow-x: auto; max-height: 300px; overflow-y: auto; }
         .btn-download { background: #10b981; width: auto; padding: 8px 20px; }
         .btn-download:hover { background: #059669; }
     </style>
@@ -122,19 +122,37 @@
 
 <script>
     const SPREADSHEET_ID = '1YUTaWS-_2GPghdv-bl_XU3vHY2GghtD-k4FN2UZWQHs';
-    const SHEET_DATA = 'Data';
+    const SHEET_DATA = 'Data'; // El nombre exacto de la hoja es "DATA"
     const SHEET_GERENTES = 'GERENTES';
     const SHEET_COORDINADORES = 'COORDINADORES';
 
-    // =====================================================
-    // ¡ATENCIÓN! Estos índices deben ajustarse según la posición REAL de las columnas
-    // Basado en la imagen, parece que la estructura tiene algunas columnas adicionales
-    // =====================================================
-    
-    // Voy a usar un método DINÁMICO: primero leer los encabezados y detectar columnas por nombre
-    let columnIndexMap = {};  // Mapeará nombre de columna -> índice
-    let dataHeaders = [];
-    
+    // ÍNDICES FIJOS según la estructura proporcionada y verificada en tu hoja
+    const COL_FECHA_VALIDACION = 0;
+    const COL_VALIDADOR = 1;
+    const COL_ESTATUS = 2;
+    const COL_FOLIO_SIAC = 3;
+    const COL_TIPO_VENTA = 4;
+    const COL_ESTRATEGIA = 5;
+    const COL_GERENTES = 6;
+    const COL_CLAVE_PROMOTOR = 7;
+    const COL_NOMBRE_CLIENTE = 8;
+    const COL_CELULAR_CLIENTE = 9;
+    const COL_CELULAR_REFERENCIA = 10;
+    const COL_CORREO = 11;
+    const COL_DIRECCION = 12;
+    const COL_PAQUETE = 13;
+    const COL_VELOCIDAD = 14;
+    const COL_GASTOS_INSTALACION = 15;
+    const COL_BENEFICIOS = 16;
+    const COL_OBSERVACIONES = 17;
+    const COL_HORA = 18;
+    const COL_DURACION_LLAMADA = 19;
+    const COL_ESTADO2 = 20;
+    const COL_AGENTE_ASIGNADO = 21;
+    const COL_CONTROL = 22;
+    const COL_FECHA_HORA_REGISTRO = 23;
+    const COL_N_INTENTOS = 39;
+
     let debugLog = [];
     function addDebug(msg, isWarning = false, isError = false) {
         let prefix = '';
@@ -223,7 +241,6 @@
     let activeStatusFilter = null;
     let currentFilteredRows = [];
 
-    // Elementos DOM
     const loginPanel = document.getElementById('loginPanel');
     const dashboardPanel = document.getElementById('dashboardPanel');
     const coordinadorSelect = document.getElementById('coordinadorSelect');
@@ -297,94 +314,53 @@
         }
     }
 
-    // Función para obtener los índices de las columnas basado en los encabezados
-    function detectColumnIndices(headers) {
-        const map = {};
-        const columnNames = [
-            'FECHA VALIDACIÓN', 'VALIDADOR', 'ESTATUS', 'FOLIO SIAC', 'TIPO DE VENTA',
-            'ESTRATEGIA', 'GERENTES', 'CLAVE DE PROMOTOR', 'NOMBRE DEL CLIENTE',
-            'CELULAR CLIENTE', 'CELULAR REFERENCIA', 'CORREO', 'DIRECCIÓN', 'PAQUETE',
-            'VELOCIDAD', 'GASTOS DE INSTALACIÓN', 'BENEFICIOS', 'OBSERVACIONES', 'HORA',
-            'DURACIÓN DE LLAMADA', 'ESTADO2', 'AGENTE_ASIGNADO', 'CONTROL', 'FECHA Y HORA REGISTRO'
-        ];
-        
-        for (let i = 0; i < headers.length; i++) {
-            const header = String(headers[i] || '').trim().toUpperCase();
-            for (const colName of columnNames) {
-                if (header === colName.toUpperCase() || header.includes(colName.toUpperCase())) {
-                    map[colName] = i;
-                    addDebug(`Detectada columna "${colName}" en índice ${i}`);
-                }
-            }
-        }
-        
-        // Verificar columnas críticas
-        const critical = ['GERENTES', 'ESTADO2', 'ESTATUS', 'FECHA Y HORA REGISTRO'];
-        for (const crit of critical) {
-            if (map[crit] === undefined) {
-                addDebug(`⚠️ Columna crítica "${crit}" NO DETECTADA`, true);
-            }
-        }
-        
-        return map;
-    }
-
     async function loadDataRows() {
         try {
             const allRows = await fetchSheetData(SHEET_DATA);
             if (!allRows.length) throw new Error('Data vacía');
             
-            // La primera fila debería ser los encabezados
-            dataHeaders = allRows[0].map(h => String(h || '').trim());
-            addDebug(`Encabezados detectados: ${dataHeaders.slice(0,8).join(', ')}...`);
+            // La fila 0 son los encabezados, los datos empiezan en la fila 1
+            const headers = allRows[0];
+            addDebug(`Encabezados encontrados: ${headers.slice(0, 8).join(', ')}...`);
             
-            // Detectar índices de columnas
-            columnIndexMap = detectColumnIndices(dataHeaders);
-            
-            // Comenzar desde la fila 1 (después de encabezados)
-            let startRow = 1;
             rawDataRows = [];
             let fechasExitosas = 0;
             let fechasFallidas = 0;
+            let gerentesEncontrados = new Set();
             
-            for (let i = startRow; i < allRows.length; i++) {
+            for (let i = 1; i < allRows.length; i++) {
                 let row = [...allRows[i]];
                 
-                // Extraer fecha de la columna FECHA Y HORA REGISTRO
-                const fechaHoraIdx = columnIndexMap['FECHA Y HORA REGISTRO'];
-                let fechaSolo = null;
-                if (fechaHoraIdx !== undefined && row[fechaHoraIdx]) {
-                    fechaSolo = extraerFechaDesdeDateTime(row[fechaHoraIdx]);
-                }
+                // Asegurar que la fila tenga al menos hasta el índice de N_INTENTOS
+                while (row.length <= COL_N_INTENTOS) row.push('');
                 
-                // Si no hay fecha, intentar con FECHA VALIDACIÓN
-                if (!fechaSolo) {
-                    const fechaValidacionIdx = columnIndexMap['FECHA VALIDACIÓN'];
-                    if (fechaValidacionIdx !== undefined && row[fechaValidacionIdx]) {
-                        fechaSolo = extraerFechaDesdeDateTime(row[fechaValidacionIdx]);
-                        if (fechaSolo) addDebug(`Usando FECHA VALIDACIÓN para fila ${i}`, true);
-                    }
-                }
+                // Extraer fecha de la columna FECHA Y HORA REGISTRO (índice 23)
+                let fechaSolo = extraerFechaDesdeDateTime(row[COL_FECHA_HORA_REGISTRO]);
                 
                 if (fechaSolo) {
                     fechasExitosas++;
                 } else {
                     fechasFallidas++;
                 }
-                row.push(fechaSolo);  // Añadir fecha al final
+                
+                const gerente = row[COL_GERENTES]?.toString().trim();
+                if (gerente && gerente !== '') {
+                    gerentesEncontrados.add(gerente);
+                }
+                
+                row.push(fechaSolo);
                 rawDataRows.push(row);
             }
             
             addDebug(`Data: ${rawDataRows.length} registros. Fechas OK: ${fechasExitosas}, Fechas NULL: ${fechasFallidas}`);
+            addDebug(`Gerentes encontrados en Data: ${Array.from(gerentesEncontrados).slice(0, 10).join(', ')}${gerentesEncontrados.size > 10 ? '...' : ''}`);
             
-            // Mostrar muestra
             for (let i = 0; i < Math.min(3, rawDataRows.length); i++) {
-                const gerenteIdx = columnIndexMap['GERENTES'];
-                const gerente = gerenteIdx !== undefined ? (rawDataRows[i][gerenteIdx] || '(vacío)') : '(no detectado)';
+                const gerente = rawDataRows[i][COL_GERENTES] || '(vacío)';
                 const fecha = rawDataRows[i][rawDataRows[i].length-1] || '(sin fecha)';
-                const estado2Idx = columnIndexMap['ESTADO2'];
-                const estado2 = estado2Idx !== undefined ? (rawDataRows[i][estado2Idx] || '(sin estado)') : '(no detectado)';
-                addDebug(`Muestra ${i+1}: Gerente="${gerente}", Fecha="${fecha}", Estado2="${estado2}"`);
+                const estado2 = rawDataRows[i][COL_ESTADO2] || '(sin estado)';
+                const estatus = rawDataRows[i][COL_ESTATUS] || '(sin estatus)';
+                addDebug(`Muestra ${i+1}: Gerente="${gerente}", Fecha="${fecha}", Estado2="${estado2}", Estatus="${estatus}"`);
             }
             
             return true;
@@ -393,15 +369,6 @@
             alert(`Error cargando ventas: ${err.message}`);
             return false;
         }
-    }
-
-    // Función helper para obtener valor de columna por nombre
-    function getColValue(row, colName) {
-        const idx = columnIndexMap[colName];
-        if (idx !== undefined && row[idx] !== undefined) {
-            return row[idx];
-        }
-        return '';
     }
 
     function getGerentesDelCoordinador() {
@@ -415,15 +382,9 @@
         if (!rawDataRows.length) return [];
         
         const gerentesPermitidos = getGerentesDelCoordinador();
-        const gerenteIdx = columnIndexMap['GERENTES'];
-        
-        if (gerenteIdx === undefined) {
-            addDebug(`❌ No se encontró la columna GERENTES en los datos`, false, true);
-            return [];
-        }
         
         const filtered = rawDataRows.filter(row => {
-            const gerenteRow = (row[gerenteIdx] || '').toString().trim();
+            const gerenteRow = (row[COL_GERENTES] || '').toString().trim();
             if (!gerentesPermitidos.includes(gerenteRow)) return false;
             
             if (currentDate) {
@@ -445,35 +406,32 @@
     function applyStatusFilter(rows) {
         if (!activeStatusFilter) return rows;
         
-        const estado2Idx = columnIndexMap['ESTADO2'];
-        const estatusIdx = columnIndexMap['ESTATUS'];
-        
         if (activeStatusFilter === 'PENDIENTE') {
             return rows.filter(row => {
-                const estado2 = String(estado2Idx !== undefined ? (row[estado2Idx] || '') : '').trim().toUpperCase();
+                const estado2 = String(row[COL_ESTADO2] || '').trim().toUpperCase();
                 return estado2 === 'PENDIENTE' || estado2 === 'DISPONIBLE';
             });
         } else if (activeStatusFilter === 'COMPLETADA_VALIDADA') {
             return rows.filter(row => {
-                const estado2 = String(estado2Idx !== undefined ? (row[estado2Idx] || '') : '').trim().toUpperCase();
-                const estatus = String(estatusIdx !== undefined ? (row[estatusIdx] || '') : '').toLowerCase();
+                const estado2 = String(row[COL_ESTADO2] || '').trim().toUpperCase();
+                const estatus = String(row[COL_ESTATUS] || '').toLowerCase();
                 return estado2 === 'COMPLETADA' && estatus.includes('validada');
             });
         } else if (activeStatusFilter === 'COMPLETADA_CANCELADO') {
             return rows.filter(row => {
-                const estado2 = String(estado2Idx !== undefined ? (row[estado2Idx] || '') : '').trim().toUpperCase();
-                const estatus = String(estatusIdx !== undefined ? (row[estatusIdx] || '') : '').toLowerCase();
+                const estado2 = String(row[COL_ESTADO2] || '').trim().toUpperCase();
+                const estatus = String(row[COL_ESTATUS] || '').toLowerCase();
                 return estado2 === 'COMPLETADA' && estatus.includes('servicio cancelado');
             });
         } else if (activeStatusFilter === 'COMPLETADA_PROGRAMADA') {
             return rows.filter(row => {
-                const estado2 = String(estado2Idx !== undefined ? (row[estado2Idx] || '') : '').trim().toUpperCase();
-                const estatus = String(estatusIdx !== undefined ? (row[estatusIdx] || '') : '').toLowerCase();
+                const estado2 = String(row[COL_ESTADO2] || '').trim().toUpperCase();
+                const estatus = String(row[COL_ESTATUS] || '').toLowerCase();
                 return estado2 === 'COMPLETADA' && estatus.includes('llamada programada');
             });
         } else {
             return rows.filter(row => {
-                const estado2 = String(estado2Idx !== undefined ? (row[estado2Idx] || '') : '').trim().toUpperCase();
+                const estado2 = String(row[COL_ESTADO2] || '').trim().toUpperCase();
                 return estado2 === activeStatusFilter;
             });
         }
@@ -483,12 +441,9 @@
         let completadas = 0, rechazadas = 0, noContesta = 0, enProceso = 0, pendientes = 0;
         let validadas = 0, servCancelado = 0, llamProgramada = 0;
         
-        const estado2Idx = columnIndexMap['ESTADO2'];
-        const estatusIdx = columnIndexMap['ESTATUS'];
-        
         for (const row of rows) {
-            const estado2 = String(estado2Idx !== undefined ? (row[estado2Idx] || '') : '').trim().toUpperCase();
-            const estatus = String(estatusIdx !== undefined ? (row[estatusIdx] || '') : '').toLowerCase();
+            const estado2 = String(row[COL_ESTADO2] || '').trim().toUpperCase();
+            const estatus = String(row[COL_ESTATUS] || '').toLowerCase();
             
             if (estado2 === 'COMPLETADA') {
                 completadas++;
@@ -554,36 +509,34 @@
         });
     }
 
-    // Definición de columnas a mostrar (usando nombres para búsqueda dinámica)
     const displayColumns = [
         { label: "#", getValue: (row, idx) => idx + 1 },
         { label: "FECHA", getValue: (row) => row[row.length-1] || '' },
-        { label: "GERENTES", colName: "GERENTES" },
-        { label: "ESTADO2", colName: "ESTADO2" },
-        { label: "ESTATUS", colName: "ESTATUS" },
-        { label: "N° INTENTOS", colName: "N_INTENTOS" },
-        { label: "FOLIO SIAC", colName: "FOLIO SIAC" },
-        { label: "TIPO DE VENTA", colName: "TIPO DE VENTA" },
-        { label: "ESTRATEGIA", colName: "ESTRATEGIA" },
-        { label: "CLAVE DE PROMOTOR", colName: "CLAVE DE PROMOTOR" },
-        { label: "NOMBRE DEL CLIENTE", colName: "NOMBRE DEL CLIENTE" },
-        { label: "CELULAR CLIENTE", colName: "CELULAR CLIENTE" },
-        { label: "CELULAR REFERENCIA", colName: "CELULAR REFERENCIA" },
-        { label: "CORREO", colName: "CORREO" },
-        { label: "DIRECCIÓN", colName: "DIRECCIÓN" },
-        { label: "PAQUETE", colName: "PAQUETE" },
-        { label: "VELOCIDAD", colName: "VELOCIDAD" },
-        { label: "GASTOS DE INSTALACIÓN", colName: "GASTOS DE INSTALACIÓN" },
-        { label: "BENEFICIOS", colName: "BENEFICIOS" },
-        { label: "OBSERVACIONES", colName: "OBSERVACIONES" }
+        { label: "GERENTE", getValue: (row) => row[COL_GERENTES] || '' },
+        { label: "ESTADO2", getValue: (row) => row[COL_ESTADO2] || '' },
+        { label: "ESTATUS", getValue: (row) => row[COL_ESTATUS] || '' },
+        { label: "N° INTENTOS", getValue: (row) => row[COL_N_INTENTOS] || '' },
+        { label: "FOLIO SIAC", getValue: (row) => row[COL_FOLIO_SIAC] || '' },
+        { label: "TIPO VENTA", getValue: (row) => row[COL_TIPO_VENTA] || '' },
+        { label: "ESTRATEGIA", getValue: (row) => row[COL_ESTRATEGIA] || '' },
+        { label: "CLAVE PROMOTOR", getValue: (row) => row[COL_CLAVE_PROMOTOR] || '' },
+        { label: "NOMBRE CLIENTE", getValue: (row) => row[COL_NOMBRE_CLIENTE] || '' },
+        { label: "CELULAR", getValue: (row) => row[COL_CELULAR_CLIENTE] || '' },
+        { label: "CELULAR REF", getValue: (row) => row[COL_CELULAR_REFERENCIA] || '' },
+        { label: "CORREO", getValue: (row) => row[COL_CORREO] || '' },
+        { label: "DIRECCIÓN", getValue: (row) => row[COL_DIRECCION] || '' },
+        { label: "PAQUETE", getValue: (row) => row[COL_PAQUETE] || '' },
+        { label: "VELOCIDAD", getValue: (row) => row[COL_VELOCIDAD] || '' },
+        { label: "GASTOS INST.", getValue: (row) => row[COL_GASTOS_INSTALACION] || '' },
+        { label: "BENEFICIOS", getValue: (row) => row[COL_BENEFICIOS] || '' },
+        { label: "OBSERVACIONES", getValue: (row) => row[COL_OBSERVACIONES] || '' }
     ];
 
     function renderTable(rows) {
-        // Construir encabezados
         tableHeader.innerHTML = `<tr>${displayColumns.map(col => `<th>${col.label}</th>`).join('')}</tr>`;
         
         if (!rows.length) {
-            tableBody.innerHTML = `<tr><td colspan="${displayColumns.length}">No hay datos para los filtros seleccionados</td></tr>`;
+            tableBody.innerHTML = `<td><td colspan="${displayColumns.length}">No hay datos para los filtros seleccionados</td></tr>`;
             return;
         }
         
@@ -592,12 +545,7 @@
             const row = rows[idx];
             let rowHtml = `<tr>`;
             for (const col of displayColumns) {
-                let value = '';
-                if (col.getValue) {
-                    value = col.getValue(row, idx);
-                } else if (col.colName) {
-                    value = getColValue(row, col.colName);
-                }
+                let value = col.getValue(row, idx);
                 rowHtml += `<td>${value !== undefined && value !== null ? value : ''}</td>`;
             }
             rowHtml += `</tr>`;
@@ -738,12 +686,7 @@
             const row = currentFilteredRows[i];
             const rowData = [];
             for (const col of displayColumns) {
-                let value = '';
-                if (col.getValue) {
-                    value = col.getValue(row, i);
-                } else if (col.colName) {
-                    value = getColValue(row, col.colName);
-                }
+                let value = col.getValue(row, i);
                 rowData.push(value !== undefined && value !== null ? value : '');
             }
             sheetData.push(rowData);
