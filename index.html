@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coordinadores - Panel de Ventas (Diagnóstico)</title>
+    <title>Coordinadores - Panel de Ventas</title>
     <link rel="icon" type="image/jpeg" href="https://i.pinimg.com/736x/16/71/90/16719070ba26c45eb14ddf3f3d4fc69c.jpg">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <style>
@@ -36,7 +36,6 @@
         .card h3 { margin: 0 0 0.5rem; font-size: 1rem; color: #334155; }
         .big-number { font-size: 2rem; font-weight: 800; color: #0f172a; }
         .sub-stats { margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px dashed #cbd5e1; font-size: 0.8rem; }
-        .sub-stats p { display: flex; justify-content: space-between; margin: 4px 0; }
         .btn-clear { background: #64748b; width: auto; padding: 6px 16px; font-size: 0.8rem; }
         .table-wrapper { overflow-x: auto; margin-top: 1.5rem; border-radius: 1rem; border: 1px solid #e2e8f0; max-height: 70vh; overflow-y: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
@@ -47,14 +46,15 @@
         .bg-pendiente { background-color: #fef9c3; }
         .footer-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem; flex-wrap: wrap; }
         .info-records { background: #f1f5f9; padding: 0.5rem 1rem; border-radius: 40px; font-size: 0.85rem; display: inline-block; }
-        .debug-panel { background: #1e1e2f; color: #50fa7b; padding: 1rem; border-radius: 1rem; margin-bottom: 1rem; font-family: monospace; font-size: 0.7rem; overflow-x: auto; max-height: 200px; overflow-y: auto; }
+        .debug-panel { background: #1e1e2f; color: #50fa7b; padding: 1rem; border-radius: 1rem; margin-bottom: 1rem; font-family: monospace; font-size: 0.7rem; overflow-x: auto; max-height: 250px; overflow-y: auto; }
         .btn-download { background: #10b981; width: auto; padding: 8px 20px; }
         .btn-download:hover { background: #059669; }
+        .warning { color: #ffb86c; }
+        .error { color: #ff5555; }
     </style>
 </head>
 <body>
 <div class="app-container" id="appContainer">
-    <!-- Login -->
     <div id="loginPanel" class="login-panel">
         <div class="header-logo">
             <img class="logo-img" src="https://i.pinimg.com/736x/16/71/90/16719070ba26c45eb14ddf3f3d4fc69c.jpg" alt="Logo">
@@ -74,7 +74,6 @@
         </div>
     </div>
 
-    <!-- Dashboard -->
     <div id="dashboardPanel" class="dashboard-panel hidden">
         <div class="header-logo">
             <img class="logo-img" src="https://i.pinimg.com/736x/16/71/90/16719070ba26c45eb14ddf3f3d4fc69c.jpg" alt="Logo">
@@ -85,7 +84,6 @@
             <button id="logoutBtn" class="logout-btn">Cerrar sesión</button>
         </div>
         
-        <!-- Panel de diagnóstico -->
         <div class="debug-panel" id="debugPanel">
             <strong>🔍 DIAGNÓSTICO:</strong><br>
             Esperando datos...
@@ -112,7 +110,7 @@
             <button id="refreshBtn" class="btn-clear" style="background:#3b82f6;">🔄 Refrescar</button>
         </div>
         
-        <div class="table-wrapper" id="tableWrapper">
+        <div class="table-wrapper">
             <table id="callsTable">
                 <thead id="tableHeader"></thead>
                 <tbody id="tableBody"></tbody>
@@ -125,53 +123,134 @@
 </div>
 
 <script>
-    // ==================== CONFIGURACIÓN ====================
     const SPREADSHEET_ID = '1YUTaWS-_2GPghdv-bl_XU3vHY2GghtD-k4FN2UZWQHs';
     const SHEET_DATA = 'Data';
     const SHEET_GERENTES = 'GERENTES';
     const SHEET_COORDINADORES = 'COORDINADORES';
 
-    // Índices de columnas en DATA (0-based) - basado en la estructura que enviaste
-    const COL_FECHA_VALIDACION = 0;      // A
-    const COL_VALIDADOR = 1;             // B
-    const COL_ESTATUS = 2;               // C
-    const COL_FOLIO_SIAC = 3;            // D
-    const COL_TIPO_VENTA = 4;            // E
-    const COL_ESTRATEGIA = 5;            // F
-    const COL_GERENTES = 6;              // G
-    const COL_CLAVE_PROMOTOR = 7;        // H
-    const COL_NOMBRE_CLIENTE = 8;        // I
-    const COL_CELULAR_CLIENTE = 9;       // J
-    const COL_CELULAR_REFERENCIA = 10;   // K
-    const COL_CORREO = 11;               // L
-    const COL_DIRECCION = 12;            // M
-    const COL_PAQUETE = 13;              // N
-    const COL_VELOCIDAD = 14;            // O
-    const COL_GASTOS_INSTALACION = 15;   // P
-    const COL_BENEFICIOS = 16;           // Q
-    const COL_OBSERVACIONES = 17;        // R
-    const COL_HORA = 18;                 // S
-    const COL_DURACION_LLAMADA = 19;     // T
-    const COL_ESTADO2 = 20;              // U
-    const COL_AGENTE_ASIGNADO = 21;      // V
-    const COL_CONTROL = 22;              // W
-    const COL_FECHA_HORA_REGISTRO = 23;  // X
-    // Las imágenes van de la columna Y a la AM (índices 24 a 38)
-    const COL_N_INTENTOS = 39;           // Columna AP (después de 15 imágenes)
+    // Índices de columnas en DATA (0-based)
+    const COL_FECHA_VALIDACION = 0;
+    const COL_ESTATUS = 2;
+    const COL_FOLIO_SIAC = 3;
+    const COL_TIPO_VENTA = 4;
+    const COL_ESTRATEGIA = 5;
+    const COL_GERENTES = 6;
+    const COL_CLAVE_PROMOTOR = 7;
+    const COL_NOMBRE_CLIENTE = 8;
+    const COL_CELULAR_CLIENTE = 9;
+    const COL_CELULAR_REFERENCIA = 10;
+    const COL_CORREO = 11;
+    const COL_DIRECCION = 12;
+    const COL_PAQUETE = 13;
+    const COL_VELOCIDAD = 14;
+    const COL_GASTOS_INSTALACION = 15;
+    const COL_BENEFICIOS = 16;
+    const COL_OBSERVACIONES = 17;
+    const COL_ESTADO2 = 20;
+    const COL_FECHA_HORA_REGISTRO = 23;
+    const COL_N_INTENTOS = 39;
 
     let debugLog = [];
-    function addDebug(msg) {
-        debugLog.unshift(`[${new Date().toLocaleTimeString()}] ${msg}`);
-        if (debugLog.length > 20) debugLog.pop();
-        document.getElementById('debugPanel').innerHTML = '<strong>🔍 DIAGNÓSTICO:</strong><br>' + debugLog.join('<br>');
+    function addDebug(msg, isWarning = false, isError = false) {
+        let prefix = '';
+        if (isError) prefix = '❌ ';
+        else if (isWarning) prefix = '⚠️ ';
+        else prefix = '✅ ';
+        debugLog.unshift(`[${new Date().toLocaleTimeString()}] ${prefix}${msg}`);
+        if (debugLog.length > 25) debugLog.pop();
+        const debugDiv = document.getElementById('debugPanel');
+        if (debugDiv) {
+            debugDiv.innerHTML = '<strong>🔍 DIAGNÓSTICO:</strong><br>' + debugLog.join('<br>');
+        }
         console.log(msg);
     }
 
-    // Datos globales
+    // ========== FUNCIÓN MEJORADA PARA EXTRAER FECHA ==========
+    function extraerFechaDesdeDateTime(valor) {
+        if (valor === undefined || valor === null || valor === '') return null;
+        
+        // Si ya es un objeto Date
+        if (valor instanceof Date && !isNaN(valor)) {
+            return `${valor.getFullYear()}-${String(valor.getMonth()+1).padStart(2,'0')}-${String(valor.getDate()).padStart(2,'0')}`;
+        }
+        
+        // Si es número de Excel (fecha serial)
+        if (typeof valor === 'number') {
+            if (valor > 40000 && valor < 50000) {
+                const date = new Date(Math.round((valor - 25569) * 86400 * 1000));
+                if (!isNaN(date)) {
+                    return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+                }
+            }
+            const d = new Date(valor);
+            if (!isNaN(d)) return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        }
+        
+        // Si es string
+        let str = String(valor).trim();
+        
+        // Formato: "Date(2026,4,7,15,30,0)" o similar
+        const dateMatch = str.match(/Date\((\d+),(\d+),(\d+)/);
+        if (dateMatch) {
+            let year = parseInt(dateMatch[1]);
+            let month = parseInt(dateMatch[2]);
+            let day = parseInt(dateMatch[3]);
+            if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+                return `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+            }
+        }
+        
+        // Formato ISO: "2026-05-07T15:30:00.000Z" o "2026-05-07 15:30:00"
+        let isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (isoMatch) {
+            return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+        }
+        
+        // Formato DD/MM/YYYY o MM/DD/YYYY (inteligente)
+        let slashMatch = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+        if (slashMatch) {
+            // Asumimos DD/MM/YYYY porque es el más común en Latinoamérica
+            let day = slashMatch[1].padStart(2,'0');
+            let month = slashMatch[2].padStart(2,'0');
+            let year = slashMatch[3];
+            return `${year}-${month}-${day}`;
+        }
+        
+        // Formato con guiones: DD-MM-YYYY
+        let dashMatch = str.match(/^(\d{1,2})-(\d{1,2})-(\d{4})/);
+        if (dashMatch) {
+            let day = dashMatch[1].padStart(2,'0');
+            let month = dashMatch[2].padStart(2,'0');
+            let year = dashMatch[3];
+            return `${year}-${month}-${day}`;
+        }
+        
+        // Intento final con new Date()
+        const d = new Date(str);
+        if (!isNaN(d) && d.getFullYear() > 2000) {
+            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        }
+        
+        return null;
+    }
+
+    async function fetchSheetData(sheetName) {
+        addDebug(`Cargando hoja: ${sheetName}...`);
+        const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
+        const resp = await fetch(url);
+        const text = await resp.text();
+        const jsonStart = text.indexOf('{');
+        const jsonEnd = text.lastIndexOf('}');
+        if (jsonStart === -1) throw new Error('JSON no encontrado');
+        const jsonStr = text.substring(jsonStart, jsonEnd + 1);
+        const parsed = JSON.parse(jsonStr);
+        addDebug(`${sheetName}: ${parsed.table.rows.length} filas`);
+        return parsed.table.rows.map(row => row.c.map(cell => (cell && cell.v !== undefined) ? cell.v : ''));
+    }
+
     let coordinadoresList = [];
     let gerentesList = [];
     let rawDataRows = [];
-    
     let loggedCoordinador = null;
     let currentDate = null;
     let currentGerente = '__ALL__';
@@ -197,41 +276,6 @@
     const refreshBtn = document.getElementById('refreshBtn');
     const downloadBtn = document.getElementById('downloadBtn');
 
-    function extraerFechaDesdeDateTime(valor) {
-        if (valor === undefined || valor === null || valor === '') return null;
-        if (valor instanceof Date && !isNaN(valor)) {
-            return `${valor.getFullYear()}-${String(valor.getMonth()+1).padStart(2,'0')}-${String(valor.getDate()).padStart(2,'0')}`;
-        }
-        if (typeof valor === 'number') {
-            if (valor > 40000 && valor < 50000) {
-                const date = new Date(Math.round((valor - 25569) * 86400 * 1000));
-                return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-            }
-            const d = new Date(valor);
-            if (!isNaN(d)) return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-        }
-        let str = String(valor).trim();
-        let fechaPart = str.split(' ')[0];
-        if (fechaPart && fechaPart.match(/^\d{4}[-\/]\d{2}[-\/]\d{2}/)) {
-            return fechaPart.replace(/\//g, '-');
-        }
-        return null;
-    }
-
-    async function fetchSheetData(sheetName) {
-        addDebug(`📡 Cargando hoja: ${sheetName}...`);
-        const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
-        const resp = await fetch(url);
-        const text = await resp.text();
-        const jsonStart = text.indexOf('{');
-        const jsonEnd = text.lastIndexOf('}');
-        if (jsonStart === -1) throw new Error('JSON no encontrado');
-        const jsonStr = text.substring(jsonStart, jsonEnd + 1);
-        const parsed = JSON.parse(jsonStr);
-        addDebug(`✅ ${sheetName}: ${parsed.table.rows.length} filas cargadas`);
-        return parsed.table.rows.map(row => row.c.map(cell => (cell && cell.v !== undefined) ? cell.v : ''));
-    }
-
     async function loadCoordinadores() {
         try {
             const data = await fetchSheetData(SHEET_COORDINADORES);
@@ -247,7 +291,7 @@
                     coordinadoresList.push({ codigo, nombres, clave });
                 }
             }
-            addDebug(`👥 Coordinadores cargados: ${coordinadoresList.length}`);
+            addDebug(`Coordinadores cargados: ${coordinadoresList.length}`);
             
             coordinadorSelect.innerHTML = '<option value="">-- Selecciona --</option>';
             coordinadoresList.forEach(coord => {
@@ -258,7 +302,7 @@
             });
             return true;
         } catch (err) {
-            addDebug(`❌ Error cargando coordinadores: ${err.message}`);
+            addDebug(`Error: ${err.message}`, false, true);
             loginError.textContent = `Error: ${err.message}`;
             loginError.style.display = 'block';
             return false;
@@ -274,16 +318,15 @@
             const gerentes = [];
             for (let i = startRow; i < data.length; i++) {
                 const nombre = data[i][0]?.toString().trim();
-                const coordinador = data[i][12]?.toString().trim(); // Columna 13 (índice 12)
+                const coordinador = data[i][12]?.toString().trim();
                 if (nombre) {
                     gerentes.push({ nombre, coordinador: coordinador || '' });
                 }
             }
-            addDebug(`👔 Gerentes cargados: ${gerentes.length}`);
-            gerentes.forEach(g => addDebug(`   - ${g.nombre} → Coord: ${g.coordinador || '(sin asignar)'}`));
+            addDebug(`Gerentes cargados: ${gerentes.length}`);
             return gerentes;
         } catch (err) {
-            addDebug(`❌ Error cargando gerentes: ${err.message}`);
+            addDebug(`Error cargando gerentes: ${err.message}`, false, true);
             return [];
         }
     }
@@ -301,27 +344,42 @@
             }
             
             rawDataRows = [];
+            let fechasExitosas = 0;
+            let fechasFallidas = 0;
+            
             for (let i = startRow; i < allRows.length; i++) {
                 let row = [...allRows[i]];
-                const fechaHora = row[COL_FECHA_HORA_REGISTRO];
-                const fechaSolo = extraerFechaDesdeDateTime(fechaHora);
+                // Intentar obtener fecha de la columna FECHA Y HORA REGISTRO
+                let fechaSolo = extraerFechaDesdeDateTime(row[COL_FECHA_HORA_REGISTRO]);
+                
+                // Si no se pudo extraer, intentar con FECHA VALIDACIÓN (columna A)
+                if (!fechaSolo) {
+                    fechaSolo = extraerFechaDesdeDateTime(row[COL_FECHA_VALIDACION]);
+                    if (fechaSolo) addDebug(`Usando FECHA VALIDACIÓN para fila ${i}`, true);
+                }
+                
+                if (fechaSolo) {
+                    fechasExitosas++;
+                } else {
+                    fechasFallidas++;
+                }
                 row.push(fechaSolo);
                 rawDataRows.push(row);
             }
             
-            addDebug(`📊 Data cargada: ${rawDataRows.length} registros (startRow=${startRow})`);
+            addDebug(`Data: ${rawDataRows.length} registros. Fechas OK: ${fechasExitosas}, Fechas NULL: ${fechasFallidas}`);
             
-            // Mostrar muestra de los primeros 3 registros
+            // Mostrar muestra
             for (let i = 0; i < Math.min(3, rawDataRows.length); i++) {
                 const gerente = rawDataRows[i][COL_GERENTES] || '(vacío)';
                 const fecha = rawDataRows[i][rawDataRows[i].length-1] || '(sin fecha)';
                 const estado2 = rawDataRows[i][COL_ESTADO2] || '(sin estado)';
-                addDebug(`   Muestra ${i+1}: Gerente="${gerente}", Fecha="${fecha}", Estado2="${estado2}"`);
+                addDebug(`Muestra ${i+1}: Gerente="${gerente}", Fecha="${fecha}", Estado2="${estado2}"`);
             }
             
             return true;
         } catch (err) {
-            addDebug(`❌ Error cargando Data: ${err.message}`);
+            addDebug(`Error cargando Data: ${err.message}`, false, true);
             alert(`Error cargando ventas: ${err.message}`);
             return false;
         }
@@ -330,20 +388,14 @@
     function getGerentesDelCoordinador() {
         if (!loggedCoordinador) return [];
         const asignados = gerentesList.filter(g => g.coordinador === loggedCoordinador.codigo).map(g => g.nombre);
-        addDebug(`🔍 Gerentes del coordinador ${loggedCoordinador.codigo}: ${asignados.length} - ${asignados.join(', ') || 'ninguno'}`);
+        addDebug(`Gerentes del coordinador ${loggedCoordinador.codigo}: ${asignados.length} - ${asignados.slice(0,5).join(', ')}${asignados.length > 5 ? '...' : ''}`);
         return asignados;
     }
 
     function getRowsFiltered() {
-        if (!rawDataRows.length) {
-            addDebug(`⚠️ No hay datos cargados`);
-            return [];
-        }
+        if (!rawDataRows.length) return [];
         
         const gerentesPermitidos = getGerentesDelCoordinador();
-        if (gerentesPermitidos.length === 0) {
-            addDebug(`⚠️ El coordinador no tiene gerentes asignados en la hoja GERENTES (columna COORDINADOR)`);
-        }
         
         const filtered = rawDataRows.filter(row => {
             const gerenteRow = (row[COL_GERENTES] || '').toString().trim();
@@ -361,7 +413,7 @@
             return true;
         });
         
-        addDebug(`📋 Filtrado: ${filtered.length} de ${rawDataRows.length} registros (fecha=${currentDate}, gerente=${currentGerente})`);
+        addDebug(`Filtrado: ${filtered.length} de ${rawDataRows.length} registros (fecha=${currentDate}, gerente=${currentGerente})`);
         return filtered;
     }
 
@@ -425,6 +477,7 @@
             <div class="card" data-status="COMPLETADA_VALIDADA">
                 <h3>✅ Validadas</h3>
                 <div class="big-number">${validadas}</div>
+                <div class="sub-stats"><small>de ${completadas} completadas</small></div>
             </div>
             <div class="card" data-status="COMPLETADA_CANCELADO">
                 <h3>❌ Servicio Cancelado</h3>
@@ -501,7 +554,7 @@
             let rowHtml = `<tr>`;
             for (let col of columnMapping) {
                 let value = col.getValue(row, idx);
-                rowHtml += `<td>${value !== undefined && value !== null ? value : ''}</td>`;
+                rowHtml += `<td>${value !== undefined && value !== null ? value : ''}</tr>`;
             }
             rowHtml += `</tr>`;
             tbodyHtml += rowHtml;
@@ -511,7 +564,7 @@
 
     async function refreshDashboard() {
         if (!loggedCoordinador) return;
-        addDebug(`🔄 Refrescando dashboard...`);
+        addDebug(`Refrescando dashboard...`);
         const baseRows = getRowsFiltered();
         const filteredRows = applyStatusFilter(baseRows);
         currentFilteredRows = filteredRows;
@@ -519,7 +572,7 @@
         const stats = computeStatsFromRows(baseRows);
         renderCards(stats);
         renderTable(filteredRows);
-        infoRecords.textContent = `Mostrando ${filteredRows.length} de ${baseRows.length} registros`;
+        infoRecords.textContent = `Mostrando ${filteredRows.length} de ${baseRows.length} registros para ${currentDate || 'todas las fechas'}`;
     }
 
     function updateGerenteSelect() {
