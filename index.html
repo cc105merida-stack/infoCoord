@@ -40,10 +40,19 @@
         .table-wrapper { overflow-x: auto; margin-top: 1.5rem; border-radius: 1rem; border: 1px solid #e2e8f0; max-height: 70vh; overflow-y: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
         th, td { border: 1px solid #cbd5e1; padding: 8px 10px; text-align: left; vertical-align: top; }
-        th { background: #f1f5f9; font-weight: 600; position: sticky; top: 0; z-index: 10; }
-        .bg-validada { background-color: #dcfce7; }
-        .bg-rechazada { background-color: #ffe4e6; }
-        .bg-pendiente { background-color: #fef9c3; }
+        /* Estilo para el encabezado: azul oscuro, texto blanco negrita */
+        th { 
+            background: #1e3a8a; 
+            color: white; 
+            font-weight: bold;
+            position: sticky; 
+            top: 0; 
+            z-index: 10;
+        }
+        /* Estilos para las filas según ESTATUS */
+        .row-validada { background-color: #dcfce7; }      /* Verde claro */
+        .row-pendiente { background-color: #fef9c3; }     /* Amarillo claro */
+        .row-cancelado { background-color: #fee2e2; }     /* Rojo claro */
         .footer-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem; flex-wrap: wrap; }
         .info-records { background: #f1f5f9; padding: 0.5rem 1rem; border-radius: 40px; font-size: 0.85rem; display: inline-block; }
         .debug-panel { background: #1e1e2f; color: #50fa7b; padding: 1rem; border-radius: 1rem; margin-bottom: 1rem; font-family: monospace; font-size: 0.7rem; overflow-x: auto; max-height: 300px; overflow-y: auto; }
@@ -122,11 +131,11 @@
 
 <script>
     const SPREADSHEET_ID = '1YUTaWS-_2GPghdv-bl_XU3vHY2GghtD-k4FN2UZWQHs';
-    const SHEET_DATA = 'Data'; // El nombre exacto de la hoja es "DATA"
+    const SHEET_DATA = 'DATA';
     const SHEET_GERENTES = 'GERENTES';
     const SHEET_COORDINADORES = 'COORDINADORES';
 
-    // ÍNDICES FIJOS según la estructura proporcionada y verificada en tu hoja
+    // ÍNDICES FIJOS según la estructura proporcionada
     const COL_FECHA_VALIDACION = 0;
     const COL_VALIDADOR = 1;
     const COL_ESTATUS = 2;
@@ -166,6 +175,23 @@
             debugDiv.innerHTML = '<strong>🔍 DIAGNÓSTICO:</strong><br>' + debugLog.join('<br>');
         }
         console.log(msg);
+    }
+
+    // Función para determinar la clase CSS según el ESTATUS
+    function getRowClassByEstatus(estatus) {
+        if (!estatus) return '';
+        const estatusLower = estatus.toString().toLowerCase().trim();
+        
+        if (estatusLower === 'validada') {
+            return 'row-validada';
+        } else if (estatusLower === 'llamada programada' || 
+                   estatusLower === 'pendiente por el promotor' || 
+                   estatusLower === 'pendiente por promotor') {
+            return 'row-pendiente';
+        } else if (estatusLower === 'servicio cancelado') {
+            return 'row-cancelado';
+        }
+        return '';
     }
 
     function extraerFechaDesdeDateTime(valor) {
@@ -319,7 +345,6 @@
             const allRows = await fetchSheetData(SHEET_DATA);
             if (!allRows.length) throw new Error('Data vacía');
             
-            // La fila 0 son los encabezados, los datos empiezan en la fila 1
             const headers = allRows[0];
             addDebug(`Encabezados encontrados: ${headers.slice(0, 8).join(', ')}...`);
             
@@ -330,11 +355,8 @@
             
             for (let i = 1; i < allRows.length; i++) {
                 let row = [...allRows[i]];
-                
-                // Asegurar que la fila tenga al menos hasta el índice de N_INTENTOS
                 while (row.length <= COL_N_INTENTOS) row.push('');
                 
-                // Extraer fecha de la columna FECHA Y HORA REGISTRO (índice 23)
                 let fechaSolo = extraerFechaDesdeDateTime(row[COL_FECHA_HORA_REGISTRO]);
                 
                 if (fechaSolo) {
@@ -536,14 +558,18 @@
         tableHeader.innerHTML = `<tr>${displayColumns.map(col => `<th>${col.label}</th>`).join('')}</tr>`;
         
         if (!rows.length) {
-            tableBody.innerHTML = `<td><td colspan="${displayColumns.length}">No hay datos para los filtros seleccionados</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="${displayColumns.length}">No hay datos para los filtros seleccionados</td></td>`;
             return;
         }
         
         let tbodyHtml = '';
         for (let idx = 0; idx < rows.length; idx++) {
             const row = rows[idx];
-            let rowHtml = `<tr>`;
+            const estatus = row[COL_ESTATUS] || '';
+            const rowClass = getRowClassByEstatus(estatus);
+            const rowClassAttr = rowClass ? `class="${rowClass}"` : '';
+            
+            let rowHtml = `<tr ${rowClassAttr}>`;
             for (const col of displayColumns) {
                 let value = col.getValue(row, idx);
                 rowHtml += `<td>${value !== undefined && value !== null ? value : ''}</td>`;
